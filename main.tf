@@ -30,7 +30,7 @@ module "worker_queue" {
 module "chunker_lambda" {
   source           = "./modules/lambda_function"
   function_name    = "chunker-lambda"
-  handler          = "chunker"
+  handler          = "bootstrap"
   runtime          = "provided.al2"
   filename         = "bin/chunker.zip"
   source_code_hash = filebase64sha256("bin/chunker.zip")
@@ -50,14 +50,15 @@ module "output_bucket" {
 }
 
 module "worker_lambda" {
-  source           = "./modules/lambda_function"
+  source           = "./modules/worker_lambda"
   function_name    = "worker-lambda"
-  handler          = "worker"
+  handler          = "bootstrap"
   runtime          = "provided.al2"
   filename         = "bin/worker.zip"
   source_code_hash = filebase64sha256("bin/worker.zip")
   environment_variables = {
     SQS_QUEUE_URL = module.worker_queue.queue_id
+    SQS_QUEUE_ARN = module.worker_queue.queue_arn
     OUTPUT_BUCKET = module.output_bucket.bucket_id
   }
   timeout     = 60
