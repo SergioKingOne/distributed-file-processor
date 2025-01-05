@@ -31,7 +31,7 @@ module "chunker_lambda" {
   source           = "./modules/lambda_function"
   function_name    = "chunker-lambda"
   handler          = "chunker"
-  runtime          = "go1.x"
+  runtime          = "provided.al2"
   filename         = "bin/chunker.zip"
   source_code_hash = filebase64sha256("bin/chunker.zip")
   environment_variables = {
