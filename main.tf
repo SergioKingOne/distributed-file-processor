@@ -43,6 +43,27 @@ module "chunker_lambda" {
   memory_size = 256
 }
 
+module "output_bucket" {
+  source        = "./modules/s3_bucket"
+  bucket_name   = "dfp-output-bucket"
+  force_destroy = true
+}
+
+module "worker_lambda" {
+  source           = "./modules/lambda_function"
+  function_name    = "worker-lambda"
+  handler          = "worker"
+  runtime          = "provided.al2"
+  filename         = "bin/worker.zip"
+  source_code_hash = filebase64sha256("bin/worker.zip")
+  environment_variables = {
+    SQS_QUEUE_URL = module.worker_queue.queue_id
+    OUTPUT_BUCKET = module.output_bucket.bucket_id
+  }
+  timeout     = 60
+  memory_size = 256
+}
+
 # Add Lambda permission for S3
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "AllowS3Invoke"
@@ -94,4 +115,13 @@ resource "aws_sqs_queue_policy" "worker_queue_policy" {
     ]
 }
 POLICY
+}
+
+# Add SQS permission for Worker Lambda
+resource "aws_lambda_permission" "allow_sqs" {
+  statement_id  = "AllowSQSInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.worker_lambda.lambda_function_name
+  principal     = "sqs.amazonaws.com"
+  source_arn    = module.worker_queue.queue_arn
 }
