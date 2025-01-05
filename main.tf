@@ -13,7 +13,7 @@ provider "aws" {
 
 module "input_bucket" {
   source        = "./modules/s3_bucket"
-  bucket_name   = "your-input-bucket-name" # Replace with a unique bucket name
+  bucket_name   = "dfp-input-bucket"
   force_destroy = true
 }
 
