@@ -72,10 +72,43 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_access_attachment" {
   policy_arn = aws_iam_policy.lambda_s3_access.arn
 }
 
+resource "aws_iam_policy" "lambda_sqs_access" {
+  name        = "${var.function_name}-sqs-access-policy"
+  description = "IAM policy for lambda function to access SQS"
+  policy      = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes"
+            ],
+            "Resource": "${var.environment_variables["SQS_QUEUE_ARN"]}"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sqs_access_attachment" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_sqs_access.arn
+}
+
 resource "aws_lambda_permission" "allow_sqs" {
   statement_id  = "AllowExecutionFromSQS"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.this.function_name
   principal     = "sqs.amazonaws.com"
   source_arn    = var.environment_variables["SQS_QUEUE_ARN"]
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_trigger" {
+  event_source_arn = var.environment_variables["SQS_QUEUE_ARN"]
+  function_name    = aws_lambda_function.this.function_name
+  batch_size       = 1 # Process one message at a time
+  enabled          = true
 }

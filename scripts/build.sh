@@ -8,14 +8,24 @@ mkdir -p bin/chunker
 mkdir -p bin/worker
 
 echo "Building chunker lambda..."
-# Build the binary named 'bootstrap'
-GOOS=linux GOARCH=amd64 go build -o bin/chunker/bootstrap src/chunker/main.go
+# Build using Amazon Linux 2 Docker image
+docker run --rm \
+    -v "$PWD":/app \
+    -w /app \
+    public.ecr.aws/amazonlinux/amazonlinux:2 \
+    bash -c "yum install -y golang && go build -o bin/chunker/bootstrap src/chunker/main.go"
+
 # Create zip with bootstrap file
 cd bin/chunker && zip ../chunker.zip bootstrap && cd ../..
 
 echo "Building worker lambda..."
-# Build the binary named 'bootstrap'
-GOOS=linux GOARCH=amd64 go build -o bin/worker/bootstrap src/worker/main.go
+# Build using Amazon Linux 2 Docker image
+docker run --rm \
+    -v "$PWD":/app \
+    -w /app \
+    public.ecr.aws/amazonlinux/amazonlinux:2 \
+    bash -c "yum install -y golang && go build -o bin/worker/bootstrap src/worker/main.go"
+
 # Create zip with bootstrap file
 cd bin/worker && zip ../worker.zip bootstrap && cd ../..
 

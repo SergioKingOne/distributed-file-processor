@@ -44,3 +44,9 @@ variable "content_based_deduplication" {
   type        = bool
   default     = false
 }
+
+variable "visibility_timeout_seconds" {
+  description = "The visibility timeout for the queue in seconds"
+  type        = number
+  default     = 120 # 2 minutes, which is greater than the Lambda timeout of 60 seconds
+}

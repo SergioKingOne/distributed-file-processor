@@ -56,15 +56,29 @@ func init() {
 
 func handler(ctx context.Context, sqsEvent events.SQSEvent) error {
 	for _, message := range sqsEvent.Records {
-		// Parse the message body
-		var body MessageBody
-		err := json.Unmarshal([]byte(message.Body), &body)
-		if err != nil {
-			log.Printf("Failed to unmarshal message body: %v", err)
-			continue // Skip to the next message
+		// The message body from SNS via SQS is wrapped, so we need to unwrap it
+		var snsWrapper struct {
+			Type      string `json:"Type"`
+			MessageId string `json:"MessageId"`
+			Message   string `json:"Message"` // The actual message is in this field
 		}
 
-		fmt.Printf("Processing chunk: bucket=%s, key=%s, start=%d, end=%d\n", body.Bucket, body.Key, body.Chunk.Start, body.Chunk.End)
+		err := json.Unmarshal([]byte(message.Body), &snsWrapper)
+		if err != nil {
+			log.Printf("Failed to unmarshal SNS wrapper: %v", err)
+			continue
+		}
+
+		// Now parse the actual message
+		var body MessageBody
+		err = json.Unmarshal([]byte(snsWrapper.Message), &body)
+		if err != nil {
+			log.Printf("Failed to unmarshal message body: %v", err)
+			continue
+		}
+
+		fmt.Printf("Processing chunk: bucket=%s, key=%s, start=%d, end=%d\n",
+			body.Bucket, body.Key, body.Chunk.Start, body.Chunk.End)
 
 		// Download the chunk from S3
 		file, err := os.CreateTemp("", "chunk-")
